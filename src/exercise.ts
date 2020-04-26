@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Web3Wrapper, TxData, SupportedProvider } from "@0x/web3-wrapper";
-import { GetSwapQuoteResponse, ZeroExSwapAPIParams, ERC20TokenContract } from "./misc";
+import { GetSwapQuoteResponse, ZeroExSwapAPIParams, ERC20TokenContract, EIGHT_GWEI_IN_WEI } from "./misc";
 import { getContractAddressesForChainOrThrow, ChainId } from "@0x/contract-addresses";
 import { BigNumber } from '@0x/utils';
 import { Web3ProviderEngine } from '@0x/subproviders';
@@ -32,8 +32,6 @@ async function introToERC20TokenContract(web3Provider: Web3ProviderEngine): Prom
         from: '0xMyAddress',
     });
 }
-
-
 
 /**
  * Converts a humanly-readable number (that may contain decimals, example: 133.232) into a big integer.
@@ -98,7 +96,9 @@ export async function performSwapAsync(
         buyToken: buyTokenWrapper.address,
         sellToken: sellTokenWrapper.address,
         sellAmount: amountToSellInBaseUnits.toString(),
-        takerAddress: fromAddress
+        takerAddress: fromAddress,
+        slippagePercentage: '0.01',
+        gasPrice: EIGHT_GWEI_IN_WEI.toString(),
     }
     const httpResponse = await axios.get<GetSwapQuoteResponse>(url, { params })
     const txData: TxData = {

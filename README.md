@@ -1,6 +1,6 @@
 # An overview of DeFi, 0x Protocol, 0x API
 
-This is a workshop for a guest lecture that I am giving @ U.C. Berkeley (30/3/20).
+This is a workshop that I initially gave  [U.C. Berkeley](https://blockchain.berkeley.edu/courses/spring-2020-developers-decal/) (30/3/20), which was the re-purposed for [Defi Discussions](https://blockchain.berkeley.edu/courses/spring-2020-developers-decal/).
 
 ## Picture of the UI
 
@@ -14,13 +14,11 @@ exchange UI that uses the 0x API to easily swap between DAI and USDC.
 
 ## Goal of the workshop
 
-During this workshop, you will:
+During this workshop, we will:
 
-- Learn how to hook up a front-end web application to the Ethereum blockchain using 0x libraries.
-- Cover important practical tasks around ERC20 tokens
-  - Learn how to use `ERC20TokenContract` to interact with a deployed contract 
-  - Learn how to convert big integers to base unit numbers using `Web3Wrapper.toBaseUnitAmount()`
-  - Learn how to allow the ERC20 Exchange proxy to trade using your wallet funds
+- Quickly speak about important practical considerations of swapping ERC20 tokens:
+  - Converting big integers to base unit numbers using `Web3Wrapper.toBaseUnitAmount()`, and vice-versa.
+  - Allowing the ERC20 Exchange proxy to trade using your wallet funds
 - Perform a Swap using the 0x API
   - Learn how to inspect a 0x API swap quote response
   - Learn how to perform with swap in 1 extra line of code!
