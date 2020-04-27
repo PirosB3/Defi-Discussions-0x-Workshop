@@ -120,8 +120,8 @@ export async function performSwapAsync(
     // You can use the line below as guidance. In the example, the variable TxData contains the deserialized JSON response from the API.
     const url = `https://kovan.api.0x.org/swap/v0/quote`;
     const params: ZeroExSwapAPIParams = {
-        buyToken: sellToken.address,
-        sellToken: buyToken.address,
+        sellToken: sellToken.address,
+        buyToken: buyToken.address,
         sellAmount: amountToSellInBaseUnits.toString(),
         takerAddress: fromAddress,
         slippagePercentage: '0.01',

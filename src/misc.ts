@@ -47,6 +47,7 @@ interface GetSwapQuoteResponseLiquiditySource {
     proportion: BigNumber;
 }
 
+
 export interface GetSwapQuoteResponse {
     price: number;
     guaranteedPrice: number;
