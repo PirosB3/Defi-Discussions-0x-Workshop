@@ -7,6 +7,12 @@ import { Web3ProviderEngine } from '@0x/subproviders';
 
 const zeroExDeployedAddresses = getContractAddressesForChainOrThrow(ChainId.Kovan);
 
+export interface ERC20Token {
+    symbol: string;
+    address: string;
+    contractWrapper: ERC20TokenContract;
+}
+
 
 async function introToERC20TokenContract(web3Provider: Web3ProviderEngine): Promise<void> {
     // A quick example of ERC20TokenContract
@@ -49,23 +55,44 @@ async function introToERC20TokenContract(web3Provider: Web3ProviderEngine): Prom
  * @param unitAmount a number representing the human-readable number
  * @returns a big integer that can be used to interact with Ethereum
  */
-async function convertValueFromHumanToEthereum(tokenWrapper: ERC20TokenContract, unitAmount: number): Promise<BigNumber> {
-    const decimals = await tokenWrapper.decimals().callAsync();
+async function convertValueFromHumanToEthereum(token: ERC20Token, unitAmount: number): Promise<BigNumber> {
+    const decimals = await token.contractWrapper.decimals().callAsync();
     return Web3Wrapper.toBaseUnitAmount(unitAmount, decimals.toNumber());
+}
+
+async function getAllowanceInHumanNumber(tokenAddress: string, owner: string, provider: SupportedProvider): Promise<number> {
+    const contract = new ERC20TokenContract(tokenAddress, provider);
+    const allowanceInEthereum = await contract.allowance(owner, zeroExDeployedAddresses.erc20Proxy).callAsync();
+    const decimals = await contract.decimals().callAsync();
+    return Web3Wrapper.toUnitAmount(allowanceInEthereum, decimals.toNumber()).toNumber();
+}
+
+async function getBalanceInEthereum(token: ERC20Token, address: string): Promise<BigNumber> {
+    return token.contractWrapper.balanceOf(address).callAsync();
+}
+
+async function getAllowanceInEthereum(token: ERC20Token, owner: string, spender: string): Promise<BigNumber> {
+    return token.contractWrapper.allowance(owner, spender).callAsync();
+}
+
+async function setAllowance(token: ERC20Token, owner: string, spender: string, allowance: BigNumber): Promise<void> {
+    await token.contractWrapper.approve(spender, allowance).awaitTransactionSuccessAsync({
+        from: owner,
+    });
 }
 
 /**
  * Performs a trade by requesting a quote from the 0x API, and filling that quote on the blockchain
  * @param buyToken the token address to buy
  * @param sellToken the token address to sell
- * @param amountToSellUnitAmount the token amount to sell
+ * @param amountToSellinHuman the token amount to sell
  * @param fromAddress the address that will perform the transaction
  * @param client the Web3Wrapper client
  */
 export async function performSwapAsync(
-    buyTokenWrapper: ERC20TokenContract,
-    sellTokenWrapper: ERC20TokenContract,
-    amountToSellUnitAmount: number,
+    buyToken: ERC20Token,
+    sellToken: ERC20Token,
+    amountToSellinHuman: number,
     fromAddress: string,
     provider: SupportedProvider,
 ): Promise<void> {
@@ -73,28 +100,28 @@ export async function performSwapAsync(
     // Check #1) Does the user have enough balance?
     // Convert the unit amount into base unit amount (bigint). For this to happen you need the number of decimals the token.
     // Fetch decimals using the getDecimalsForToken(), and use Web3Wrapper.toBaseUnitAmount() to perform the conversion
-    const amountToSellInBaseUnits = await convertValueFromHumanToEthereum(sellTokenWrapper, amountToSellUnitAmount);
-    const sellTokenBalanceInBaseUnit = await sellTokenWrapper.balanceOf(fromAddress).callAsync();
+    const amountToSellInBaseUnits = await convertValueFromHumanToEthereum(sellToken, amountToSellinHuman);
+    const sellTokenBalanceInBaseUnit = await getBalanceInEthereum(sellToken, fromAddress);
     if (amountToSellInBaseUnits > sellTokenBalanceInBaseUnit) {
         throw new Error(`Insufficient funds.`)
     }
 
     // Check #2) Does the 0x ERC20 Proxy have permission to withdraw funds from the exchange?
-    const currentAllowanceInBaseUnitAmount = await sellTokenWrapper.allowance(fromAddress, zeroExDeployedAddresses.erc20Proxy).callAsync();
+    const currentAllowanceInBaseUnitAmount = await getAllowanceInEthereum(sellToken, fromAddress, zeroExDeployedAddresses.erc20Proxy)
     if (currentAllowanceInBaseUnitAmount < amountToSellInBaseUnits) {
 
         // In order to allow the 0x smart contracts to trade with your funds, you need to set an allowance for zeroExDeployedAddresses.erc20Proxy.
         // This can be done using the `approve` function.
-        const allowance = await convertValueFromHumanToEthereum(sellTokenWrapper, 300);
-        await sellTokenWrapper.approve(zeroExDeployedAddresses.erc20Proxy, allowance).awaitTransactionSuccessAsync({from: fromAddress})
+        const allowance = await convertValueFromHumanToEthereum(sellToken, 300);
+        await setAllowance(sellToken, fromAddress, zeroExDeployedAddresses.erc20Proxy, allowance);
     }
         
     // Step #2) Make a request to the 0x API swap endpoint: https://0x.org/docs/guides/swap-tokens-with-0x-api#swap-eth-for-1-dai
     // You can use the line below as guidance. In the example, the variable TxData contains the deserialized JSON response from the API.
     const url = `https://kovan.api.0x.org/swap/v0/quote`;
     const params: ZeroExSwapAPIParams = {
-        buyToken: buyTokenWrapper.address,
-        sellToken: sellTokenWrapper.address,
+        buyToken: sellToken.address,
+        sellToken: buyToken.address,
         sellAmount: amountToSellInBaseUnits.toString(),
         takerAddress: fromAddress,
         slippagePercentage: '0.01',
