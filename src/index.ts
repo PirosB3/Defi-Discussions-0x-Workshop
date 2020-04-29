@@ -3,8 +3,8 @@ import './style.css'
 
 import { Web3Wrapper } from '@0x/web3-wrapper';
 import { MetamaskSubprovider, Web3ProviderEngine, RPCSubprovider } from '@0x/subproviders'
-import { FAKE_DAI, FAKE_USDC, MetamaskWindow, INFURA_RPC_URL, DEFAULT_MINT_AMOUNT, linkBtnToCallback, mintTokens, setTextOnDOMElement, ERC20TokenContract } from './misc';
-import { performSwapAsync, ERC20Token } from './exercise';
+import { FAKE_DAI, FAKE_USDC, MetamaskWindow, INFURA_RPC_URL, DEFAULT_MINT_AMOUNT, linkBtnToCallback, mintTokens, setTextOnDOMElement, ERC20TokenContract, setAllowances, ERC20Token } from './misc';
+import { performSwapAsync } from './exercise';
 import { getContractAddressesForChainOrThrow, ChainId } from '@0x/contract-addresses';
 
 
@@ -55,8 +55,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     linkBtnToCallback("mintDAI", () => mintTokens(account, FAKE_DAI, provider, DEFAULT_MINT_AMOUNT));
     linkBtnToCallback("mintUSDC", () => mintTokens(account, FAKE_USDC, provider, DEFAULT_MINT_AMOUNT));
-    linkBtnToCallback("swapDaiForUsdc", () => performSwapAsync(usdcToken, daiToken, 100, account, provider));
-    linkBtnToCallback("swapUsdcForDai", () => performSwapAsync(daiToken, usdcToken, 100, account, provider));
+    linkBtnToCallback("swapDaiForUsdc", () => performSwapAsync(usdcToken.address, daiToken.address, 100, account, provider));
+    linkBtnToCallback("swapUsdcForDai", () => performSwapAsync(daiToken.address, usdcToken.address, 100, account, provider));
+    linkBtnToCallback("setAllowances", () => setAllowances([daiToken, usdcToken], account));
 
     const zeroExDeployedAddresses = getContractAddressesForChainOrThrow(ChainId.Kovan);
     setInterval(async () => {

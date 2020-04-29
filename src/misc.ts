@@ -5,10 +5,21 @@ import { BigNumber } from "@0x/utils";
 import { SignedOrder } from "@0x/types";
 import { SupportedProvider, Web3Wrapper } from "@0x/web3-wrapper";
 import { DummyERC20TokenContract } from "@0x/contracts-erc20";
+import { getContractAddressesForChainOrThrow, ChainId } from "@0x/contract-addresses";
 
 // Hack! The `ERC20TokenContract` in "@0x/contracts-erc20" does not have `decimals()`, so I am using
 // an internal contract that is called `DummyERC20TokenContract` instead.
 export { DummyERC20TokenContract as ERC20TokenContract } from "@0x/contracts-erc20";
+
+export interface ERC20Token {
+
+    // `symbol` and `address` are the only parameters that are relevant for this tutorial.
+    symbol: string;
+    address: string;
+
+    // Contract wrappers will not be covered for the purpose of this tutorial!
+    contractWrapper: DummyERC20TokenContract;
+}
 
 
 // Attention! This tutorial will be using 2 dummy ERC20 token contracts
@@ -121,4 +132,21 @@ export async function mintTokens(fromAddress: string, tokenAddress: string, prov
         from: fromAddress,
     });
     return tx.transactionHash;
+}
+
+
+export async function setAllowances(
+    tokens: ERC20Token[],
+    account: string,
+    allowance: number = 300,
+): Promise<void> {
+    const { erc20Proxy } = getContractAddressesForChainOrThrow(ChainId.Kovan);
+
+    for (const token of tokens) {
+        const decimals = await token.contractWrapper.decimals().callAsync()
+        const allowanceBaseUnits = Web3Wrapper.toBaseUnitAmount(allowance, decimals.toNumber());
+        await token.contractWrapper.approve(erc20Proxy, allowanceBaseUnits).awaitTransactionSuccessAsync({
+            from: account,
+        });
+    }
 }
